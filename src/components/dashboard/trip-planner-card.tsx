@@ -13,6 +13,8 @@ import type { SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
 import { Badge } from "../ui/badge";
 import { ScrollArea } from "../ui/scroll-area";
 import { Skeleton } from "../ui/skeleton";
+import { Checkbox } from "../ui/checkbox";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../ui/alert-dialog";
 
 interface TripPlannerCardProps {
   origin: string;
@@ -86,8 +88,33 @@ const StopInput = ({ type, onAdd }: { type: StopType; onAdd: (stop: string, type
   );
 };
 
-const Suggestions = ({ suggestions, onAdd, isSuggesting }: { suggestions: SuggestedStop[], onAdd: (suggestion: SuggestedStop) => void, isSuggesting: boolean }) => {
-  if (isSuggesting) {
+const Suggestions = ({ suggestions, onAdd, isSuggesting }: { suggestions: SuggestedStop[], onAdd: (suggestions: SuggestedStop[]) => void, isSuggesting: boolean }) => {
+  const [selectedSuggestions, setSelectedSuggestions] = useState<SuggestedStop[]>([]);
+  const [showMoreSearch, setShowMoreSearch] = useState(false);
+  const [newInterest, setNewInterest] = useState('');
+
+  const handleCheckboxChange = (suggestion: SuggestedStop, checked: boolean | 'indeterminate') => {
+    if (checked) {
+      setSelectedSuggestions(prev => [...prev, suggestion]);
+    } else {
+      setSelectedSuggestions(prev => prev.filter(s => s.name !== suggestion.name));
+    }
+  };
+
+  const handleAddSelected = () => {
+    onAdd(selectedSuggestions);
+    setSelectedSuggestions([]);
+  };
+
+  const handleFinalizeAndAdd = (addMore: boolean) => {
+    onAdd(selectedSuggestions);
+    setSelectedSuggestions([]);
+    if (addMore) {
+        // Logic for providing more options will be here
+    }
+  }
+
+  if (isSuggesting && suggestions.length === 0) {
     return (
       <div className="space-y-2">
         <Skeleton className="h-8 w-full" />
@@ -97,30 +124,75 @@ const Suggestions = ({ suggestions, onAdd, isSuggesting }: { suggestions: Sugges
     )
   }
 
-  if (suggestions.length === 0) {
+  if (suggestions.length === 0 && !isSuggesting) {
     return <p className="text-sm text-muted-foreground text-center py-4">No suggestions at this time.</p>;
   }
 
   return (
-    <ScrollArea className="h-48">
-      <div className="space-y-2 pr-4">
-        {suggestions.map((suggestion, index) => (
-          <div key={index} className="p-2 border rounded-lg bg-background/50 text-sm">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold">{suggestion.name}</p>
-                <p className="text-muted-foreground text-xs">{suggestion.location}</p>
-              </div>
-              <Button size="sm" variant="ghost" onClick={() => onAdd(suggestion)} title={`Add ${suggestion.name} to trip`}>
-                <PlusCircle className="w-4 h-4" />
-              </Button>
+    <div className="space-y-2">
+        <ScrollArea className="h-48">
+        <div className="space-y-2 pr-4">
+            {suggestions.map((suggestion, index) => (
+            <div key={index} className="p-2 border rounded-lg bg-background/50 text-sm flex items-start gap-3">
+                <Checkbox 
+                    id={`suggestion-${index}`}
+                    className="mt-1"
+                    onCheckedChange={(checked) => handleCheckboxChange(suggestion, checked)}
+                    checked={selectedSuggestions.some(s => s.name === suggestion.name)}
+                />
+                <label htmlFor={`suggestion-${index}`} className="flex-1">
+                    <p className="font-semibold">{suggestion.name}</p>
+                    <p className="text-muted-foreground text-xs">{suggestion.location}</p>
+                    <p className="mt-1 text-muted-foreground">{suggestion.description}</p>
+                    <Badge variant="outline" className="mt-2 capitalize">{suggestion.type}</Badge>
+                </label>
             </div>
-            <p className="mt-1 text-muted-foreground">{suggestion.description}</p>
-            <Badge variant="outline" className="mt-2 capitalize">{suggestion.type}</Badge>
-          </div>
-        ))}
-      </div>
-    </ScrollArea>
+            ))}
+        </div>
+        </ScrollArea>
+        {selectedSuggestions.length > 0 && (
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button className="w-full mt-2">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Selected Stops
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Add more stops?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Your selected stops will be added to the route. Would you like to search for more stops based on a new interest?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {showMoreSearch && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="new-interest">New Interest</Label>
+                            <Input id="new-interest" value={newInterest} onChange={e => setNewInterest(e.target.value)} placeholder="e.g., museums, coffee shops" />
+                        </div>
+                    )}
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => {
+                            setShowMoreSearch(false);
+                            handleFinalizeAndAdd(false);
+                        }}>No, just add them</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            if (showMoreSearch) {
+                                // This is where we would trigger a new search
+                                console.log("New search for:", newInterest);
+                                handleFinalizeAndAdd(true);
+                                setShowMoreSearch(false);
+                                setNewInterest('');
+                            } else {
+                                setShowMoreSearch(true);
+                            }
+                        }}>
+                           {showMoreSearch ? 'Search & Add' : 'Yes, search more'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        )}
+    </div>
   );
 }
 
@@ -163,6 +235,10 @@ export default function TripPlannerCard({
     e.preventDefault();
     onPlanRoute();
   };
+
+  const handleAddSuggestions = (stops: SuggestedStop[]) => {
+    stops.forEach(onAddSuggestion);
+  }
 
   return (
     <Card>
@@ -222,7 +298,7 @@ export default function TripPlannerCard({
                 <h3 className="font-semibold flex items-center gap-2"><Sparkles className="text-accent" /> AI Suggestions</h3>
                 <p className="text-sm text-muted-foreground">Stops recommended just for you.</p>
             </div>
-            <Suggestions suggestions={suggestions} onAdd={onAddSuggestion} isSuggesting={isSuggesting} />
+            <Suggestions suggestions={suggestions} onAdd={handleAddSuggestions} isSuggesting={isSuggesting} />
             <Separator />
             <div className="space-y-1">
                 <h3 className="font-semibold">Add Manual Stops</h3>

@@ -110,18 +110,24 @@ export default function Home() {
     }
   };
 
-  const getSuggestions = async (currentWaypoints: google.maps.DirectionsWaypoint[]) => {
+  const getSuggestions = async (currentWaypoints: google.maps.DirectionsWaypoint[], newInterest?: string) => {
     setIsSuggesting(true);
     try {
       const waypointStrings = currentWaypoints.map(wp => ('location' in wp && wp.location?.toString()) || '').filter(Boolean);
+      const interests = newInterest ? [...userProfile.interests, newInterest] : userProfile.interests;
       const result = await suggestStopsAlongRoute({
         origin,
         destination,
         waypoints: waypointStrings,
-        interests: userProfile.interests,
+        interests: interests,
         vehicleDetails: userProfile.vehicle,
       });
-      setSuggestions(result.suggestions);
+      // Filter out suggestions that are already in waypoints
+      const existingStops = new Set(waypointStrings);
+      const newSuggestions = result.suggestions.filter(s => !existingStops.has(`${s.name}, ${s.location}`));
+
+      setSuggestions(newSuggestions);
+
     } catch (error) {
       console.error("Failed to get suggestions:", error);
     } finally {
