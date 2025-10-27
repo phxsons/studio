@@ -21,7 +21,7 @@ import { generatePersonalizedRoadTripItinerary, type RoadTripItineraryInput, typ
 
 const libraries: ('places' | 'maps')[] = ['places', 'maps'];
 
-export type TripStep = 'initial' | 'preferences' | 'generating' | 'summary' | 'driving';
+export type TripStep = 'initial' | 'startPointChoice' | 'preferences' | 'generating' | 'summary' | 'driving';
 export type StopType = 'gas' | 'event' | 'lodging';
 
 export default function Home() {
@@ -131,7 +131,7 @@ export default function Home() {
           travelMode: google.maps.TravelMode.DRIVING,
         });
         // Don't set directions response yet, just validate.
-        setTripStep('preferences');
+        setTripStep('startPointChoice');
       } catch (e) {
         console.error("Directions request failed", e);
       } finally {
@@ -249,6 +249,7 @@ export default function Home() {
           <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
             <TripPlannerCard
               origin={origin}
+              onOriginChange={setOrigin}
               destination={destination}
               onDestinationChange={setDestination}
               onPlanRoute={handlePlanRoute}
@@ -258,6 +259,7 @@ export default function Home() {
               onReset={handleResetTrip}
               itinerary={itinerary}
               onBackToPreferences={() => setTripStep('preferences')}
+              onProceedToPreferences={() => setTripStep('preferences')}
             />
           </div>
         )}

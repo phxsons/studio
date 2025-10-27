@@ -5,16 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Route, RotateCcw, Navigation, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Route, RotateCcw, Navigation, Sparkles, Wand2, MapPin, Calendar } from "lucide-react";
 import { Autocomplete } from "@react-google-maps/api";
 import { TripStep } from "@/app/page";
 import type { RoadTripItineraryInput, RoadTripItineraryOutput } from "@/ai/flows/generate-personalized-road-trip-itinerary";
 import TripPreferencesForm from "./trip-preferences-form";
 import { ScrollArea } from "../ui/scroll-area";
-import { Separator } from "../ui/separator";
 
 interface TripPlannerCardProps {
   origin: string;
+  onOriginChange: (value: string) => void;
   destination: string;
   onDestinationChange: (value: string) => void;
   onPlanRoute: (preferences?: Omit<RoadTripItineraryInput, 'startingPoint' | 'destination'>) => void;
@@ -24,10 +24,12 @@ interface TripPlannerCardProps {
   onReset: () => void;
   itinerary: RoadTripItineraryOutput | null;
   onBackToPreferences: () => void;
+  onProceedToPreferences: () => void;
 }
 
 export default function TripPlannerCard({
   origin,
+  onOriginChange,
   destination,
   onDestinationChange,
   onPlanRoute,
@@ -37,8 +39,17 @@ export default function TripPlannerCard({
   onReset,
   itinerary,
   onBackToPreferences,
+  onProceedToPreferences,
 }: TripPlannerCardProps) {
+  const originAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const destinationAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const handleOriginPlaceChanged = () => {
+    if (originAutocompleteRef.current) {
+      const place = originAutocompleteRef.current.getPlace();
+      onOriginChange(place.formatted_address || place.name || "");
+    }
+  };
 
   const handleDestinationPlaceChanged = () => {
     if (destinationAutocompleteRef.current) {
@@ -62,22 +73,30 @@ export default function TripPlannerCard({
         <CardHeader>
           <CardTitle>Trip Planner</CardTitle>
           {tripStep === 'initial' && <CardDescription>Enter your destination to map your journey.</CardDescription>}
+          {tripStep === 'startPointChoice' && <CardDescription>How are you planning to travel?</CardDescription>}
           {tripStep === 'preferences' && <CardDescription>Customize your trip to get AI-powered recommendations.</CardDescription>}
           {tripStep === 'generating' && <CardDescription>Our AI is crafting your personalized itinerary...</CardDescription>}
           {tripStep === 'summary' && <CardDescription>Your AI-generated road trip is ready!</CardDescription>}
         </CardHeader>
         <CardContent className="grid gap-4">
           
-          {(tripStep === 'initial' || tripStep === 'preferences') && (
+          {(tripStep === 'initial' || tripStep === 'preferences' || tripStep === 'startPointChoice') && (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="start-point">Starting Point</Label>
-                <Input
-                  id="start-point"
-                  value={origin}
-                  readOnly
-                  className="bg-muted"
-                />
+                <Autocomplete
+                  onLoad={(ref) => originAutocompleteRef.current = ref}
+                  onPlaceChanged={handleOriginPlaceChanged}
+                  isEnabled={tripStep === 'startPointChoice'}
+                >
+                  <Input
+                    id="start-point"
+                    value={origin}
+                    onChange={(e) => onOriginChange(e.target.value)}
+                    readOnly={tripStep !== 'startPointChoice'}
+                    className={tripStep !== 'startPointChoice' ? "bg-muted" : ""}
+                  />
+                </Autocomplete>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="destination">Destination</Label>
@@ -92,6 +111,7 @@ export default function TripPlannerCard({
                     value={destination}
                     onChange={(e) => onDestinationChange(e.target.value)}
                     readOnly={tripStep !== 'initial'}
+                    className={tripStep !== 'initial' ? "bg-muted" : ""}
                   />
                 </Autocomplete>
               </div>
@@ -103,6 +123,17 @@ export default function TripPlannerCard({
               {isRoutePlanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Route className="mr-2 h-4 w-4" />}
               {isRoutePlanning ? 'Validating...' : 'Plan Route'}
             </Button>
+          )}
+
+          {tripStep === 'startPointChoice' && (
+            <div className="grid sm:grid-cols-2 gap-2">
+                <Button onClick={onProceedToPreferences} variant="outline">
+                    <MapPin className="mr-2 h-4 w-4" /> Let's Go Now
+                </Button>
+                <Button onClick={onProceedToPreferences} variant="outline">
+                    <Calendar className="mr-2 h-4 w-4" /> Plan for Later
+                </Button>
+            </div>
           )}
 
           {tripStep === 'preferences' && (
