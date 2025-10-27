@@ -20,11 +20,6 @@ const preferencesSchema = z.object({
   interests: z.array(z.string()).nonempty({ message: 'Please select at least one interest.' }),
   lodgingPreferences: z.array(z.string()).nonempty({ message: 'Please select at least one lodging preference.' }),
   lodgingMemberships: z.array(z.string()).optional(),
-  otherTripType: z.string().optional(),
-  otherVehicleType: z.string().optional(),
-  otherInterest: z.string().optional(),
-  otherLodging: z.string().optional(),
-  otherMembership: z.string().optional(),
 });
 
 interface TripPreferencesFormProps {
@@ -38,66 +33,78 @@ const interestOptions = ["Relax", "Shopping", "Hiking", "Biking", "Water Sports"
 const lodgingOptions = ["Hotel", "RV Park", "Glamping", "Camping", "Free Places to Stay (e.g., Cracker Barrel)"];
 const membershipOptions = ["Military", "Elks Lodge", "KOA", "Harvest Host"];
 
-const CheckboxGroup = ({ name, options, control, otherFieldName }: { name: keyof PreferencesFormValues, options: string[], control: any, otherFieldName?: keyof PreferencesFormValues }) => {
+const CheckboxGroup = ({ name, options, control, otherFieldName }: { name: keyof PreferencesFormValues, options: string[], control: any, otherFieldName?: string }) => {
     const [otherValue, setOtherValue] = useState('');
-    
+    const [isOtherChecked, setIsOtherChecked] = useState(false);
+
     return (
         <Controller
             control={control}
             name={name}
-            render={({ field }) => (
-                <div className="space-y-2">
-                    {options.map((option) => (
-                        <div key={option} className="flex items-center gap-2">
-                            <Checkbox
-                                id={`${name}-${option}`}
-                                checked={field.value?.includes(option) ?? false}
-                                onCheckedChange={(checked) => {
-                                    const newValue = checked
-                                        ? [...(field.value ?? []), option]
-                                        : (field.value ?? []).filter((v: string) => v !== option);
-                                    field.onChange(newValue);
-                                }}
-                            />
-                            <Label htmlFor={`${name}-${option}`}>{option}</Label>
-                        </div>
-                    ))}
-                    {otherFieldName && (
-                         <div className="flex items-center gap-2">
-                            <Checkbox
-                                id={`${name}-other`}
-                                checked={field.value?.includes(otherValue) && !!otherValue}
-                                onCheckedChange={(checked) => {
-                                    if (checked) {
-                                        if(otherValue) field.onChange([...(field.value ?? []), otherValue]);
-                                    } else {
-                                        field.onChange((field.value ?? []).filter((v: string) => v !== otherValue));
-                                    }
-                                }}
-                            />
-                             <Input
-                                placeholder="Other"
-                                className="h-8"
-                                value={otherValue}
-                                onChange={(e) => {
-                                    const oldVal = otherValue;
-                                    const newV = e.target.value;
-                                    setOtherValue(newV);
-                                    
-                                    const currentValues = field.value ?? [];
-                                    const withoutOld = currentValues.filter((v: string) => v !== oldVal);
-                                    
-                                    if(newV) {
-                                       field.onChange([...withoutOld, newV]);
-                                    } else {
-                                       field.onChange(withoutOld);
-                                    }
-                                }}
-                            />
-                        </div>
-                    )}
-                </div>
-            )}
+            render={({ field }) => {
+                const handleOtherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+                    const oldVal = otherValue;
+                    const newV = e.target.value;
+                    setOtherValue(newV);
+
+                    if (isOtherChecked) {
+                        const currentValues = field.value ?? [];
+                        const withoutOld = currentValues.filter((v: string) => v !== oldVal);
+                        
+                        if (newV) {
+                           field.onChange([...withoutOld, newV]);
+                        } else {
+                           field.onChange(withoutOld);
+                        }
+                    }
+                };
+
+                const handleOtherCheckboxChange = (checked: boolean) => {
+                    setIsOtherChecked(checked);
+                    if (checked) {
+                        if (otherValue) {
+                            field.onChange([...(field.value ?? []), otherValue]);
+                        }
+                    } else {
+                        field.onChange((field.value ?? []).filter((v: string) => v !== otherValue));
+                    }
+                };
+                
+                return (
+                    <div className="space-y-2">
+                        {options.map((option) => (
+                            <div key={option} className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`${name.toString()}-${option}`}
+                                    checked={field.value?.includes(option) ?? false}
+                                    onCheckedChange={(checked) => {
+                                        const newValue = checked
+                                            ? [...(field.value ?? []), option]
+                                            : (field.value ?? []).filter((v: string) => v !== option);
+                                        field.onChange(newValue);
+                                    }}
+                                />
+                                <Label htmlFor={`${name.toString()}-${option}`}>{option}</Label>
+                            </div>
+                        ))}
+                        {otherFieldName && (
+                             <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id={`${name.toString()}-other`}
+                                    checked={isOtherChecked}
+                                    onCheckedChange={handleOtherCheckboxChange}
+                                />
+                                 <Input
+                                    placeholder="Other"
+                                    className="h-8"
+                                    value={otherValue}
+                                    onChange={handleOtherChange}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )
+            }}
         />
     );
 };
@@ -116,22 +123,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
   });
 
   const processSubmit = (data: PreferencesFormValues) => {
-    // This logic to combine "Other" fields can be improved, but works for now
-    const processedData = { ...data };
-    if (data.otherTripType) processedData.tripType.push(data.otherTripType);
-    if (data.otherVehicleType) processedData.vehicleType.push(data.otherVehicleType);
-    if (data.otherInterest) processedData.interests.push(data.otherInterest);
-    if (data.otherLodging) processedData.lodgingPreferences.push(data.otherLodging);
-    if (data.otherMembership && processedData.lodgingMemberships) processedData.lodgingMemberships.push(data.otherMembership);
-    
-    // remove other fields
-    delete processedData.otherTripType;
-    delete processedData.otherVehicleType;
-    delete processedData.otherInterest;
-    delete processedData.otherLodging;
-    delete processedData.otherMembership;
-
-    onSubmit(processedData);
+    onSubmit(data);
   };
   
   const renderError = (fieldName: keyof typeof errors) => {
