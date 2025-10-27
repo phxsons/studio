@@ -18,10 +18,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { suggestStopsAlongRoute, type SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
 import { userProfile } from "@/lib/data";
-import { getWeatherForRoute, type WeatherInfo } from "@/ai/flows/get-weather-for-route";
-import { getTrafficForRoute, type TrafficAlert } from "@/ai/flows/get-traffic-for-route";
-import RouteWeatherCard from "@/components/dashboard/route-weather-card";
-import TrafficAlertsCard from "@/components/dashboard/traffic-alerts-card";
 
 const libraries: ("places" | "maps")[] = ["places", "maps"];
 
@@ -38,10 +34,7 @@ export default function Home() {
   const [waypoints, setWaypoints] = useState<google.maps.DirectionsWaypoint[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [weather, setWeather] = useState<WeatherInfo | null>(null);
-  const [traffic, setTraffic] = useState<TrafficAlert[] | null>(null);
-  const [isLoadingExtras, setIsLoadingExtras] = useState(false);
-
+  
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -89,23 +82,6 @@ export default function Home() {
       }
     }
   }, [isLoaded, tripStep]);
-
-  const getRouteExtras = async (origin: string, destination: string, waypoints: google.maps.DirectionsWaypoint[]) => {
-    setIsLoadingExtras(true);
-    try {
-        const waypointStrings = waypoints.map(wp => ('location' in wp && wp.location?.toString()) || '').filter(Boolean);
-        const [weatherResponse, trafficResponse] = await Promise.all([
-            getWeatherForRoute({ origin, destination, waypoints: waypointStrings }),
-            getTrafficForRoute({ origin, destination, waypoints: waypointStrings }),
-        ]);
-        setWeather(weatherResponse);
-        setTraffic(trafficResponse.alerts);
-    } catch (error) {
-        console.error("Failed to get route extras:", error);
-    } finally {
-        setIsLoadingExtras(false);
-    }
-  };
 
   const handlePlanRoute = async (newWaypoints: google.maps.DirectionsWaypoint[] = waypoints) => {
     if (!origin || !destination) {
@@ -185,8 +161,6 @@ export default function Home() {
     setWaypoints([]);
     setSuggestions([]);
     setTripStep('initial');
-    setWeather(null);
-    setTraffic(null);
   }
 
   const handleAddSuggestion = (suggestion: SuggestedStop) => {
@@ -201,7 +175,6 @@ export default function Home() {
 
   const handleConfirmStops = () => {
     setTripStep('summary');
-    getRouteExtras(origin, destination, waypoints);
   }
 
   const handleNavigate = () => {
@@ -304,14 +277,6 @@ export default function Home() {
              />
            </div>
         )}
-
-        {(tripStep === 'summary' || tripStep === 'driving') && (
-            <div className="absolute bottom-4 left-4 right-4 z-10 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <RouteWeatherCard weather={weather} isLoading={isLoadingExtras} />
-                <TrafficAlertsCard alerts={traffic} isLoading={isLoadingExtras} />
-            </div>
-        )}
-
 
         <Sheet>
           <SheetTrigger asChild>
