@@ -12,6 +12,7 @@ import { PanelRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import TripPlannerCard from "@/components/dashboard/trip-planner-card";
 
 export default function Home() {
   const [logoVisible, setLogoVisible] = useState(true);
@@ -52,6 +53,7 @@ export default function Home() {
               </SheetHeader>
               <ScrollArea className="h-[calc(100%-4rem)]">
                 <div className="space-y-6 p-4">
+                  <TripPlannerCard />
                   <WeatherCard />
                   <div>
                     <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
