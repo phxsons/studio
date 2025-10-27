@@ -31,7 +31,7 @@ export default function RoadtripPage() {
   const [stops, setStops] = useState<Stop[]>([]);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script-roadtrip',
+    id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries,
   });
