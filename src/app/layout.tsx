@@ -3,7 +3,8 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RoadHog: Your Open Road Companion',
+  metadataBase: new URL('https://www.roadhog.ai'),
+  title: 'RoadHog.ai: Your Open Road Companion',
   description: 'A mobile-first travel companion application that blends personalized navigation, social connectivity, and real-time discovery.',
 };
 
