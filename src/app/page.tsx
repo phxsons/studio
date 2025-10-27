@@ -20,12 +20,17 @@ import { AlertTriangle } from "lucide-react";
 
 const libraries: ("places" | "maps")[] = ["places", "maps"];
 
+type TripStep = 'initial' | 'add-stops' | 'summary' | 'driving';
+export type StopType = 'gas' | 'event' | 'lodging';
+
 export default function Home() {
   const [logoVisible, setLogoVisible] = useState(true);
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
   const [isRoutePlanning, setIsRoutePlanning] = useState(false);
+  const [tripStep, setTripStep] = useState<TripStep>('initial');
+  const [waypoints, setWaypoints] = useState<google.maps.DirectionsWaypoint[]>([]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -33,7 +38,7 @@ export default function Home() {
     libraries,
   });
 
-  const handlePlanRoute = async () => {
+  const handlePlanRoute = async (newWaypoints: google.maps.DirectionsWaypoint[] = waypoints) => {
     if (!origin || !destination) {
       return;
     }
@@ -44,11 +49,15 @@ export default function Home() {
         origin: origin,
         destination: destination,
         travelMode: google.maps.TravelMode.DRIVING,
+        waypoints: newWaypoints,
+        optimizeWaypoints: true,
       });
       setDirectionsResponse(results);
+      if (tripStep === 'initial') {
+        setTripStep('add-stops');
+      }
     } catch (e) {
       console.error("Directions request failed", e);
-      // You could add a user-facing error message here
     } finally {
       setIsRoutePlanning(false);
     }
@@ -59,6 +68,33 @@ export default function Home() {
       setLogoVisible(false);
     }
   };
+
+  const handleAddStop = (stop: string, type: StopType) => {
+    const newWaypoint = { location: stop, stopover: true };
+    const newWaypoints = [...waypoints, newWaypoint];
+    setWaypoints(newWaypoints);
+    handlePlanRoute(newWaypoints); // Re-plan route with new stop
+  };
+  
+  const handleStartTrip = () => {
+    setTripStep('driving');
+    setLogoVisible(true); // Re-show for animation
+    setTimeout(() => {
+        const logoEl = document.getElementById('animated-logo');
+        if (logoEl) {
+            logoEl.classList.add('-translate-x-[200vw]', 'rotate-[-360deg]');
+        }
+    }, 100);
+    setTimeout(() => setLogoVisible(false), 1500); // Hide after animation
+  };
+
+  const handleResetTrip = () => {
+    setOrigin('');
+    setDestination('');
+    setDirectionsResponse(null);
+    setWaypoints([]);
+    setTripStep('initial');
+  }
 
   if (loadError) {
     return (
@@ -98,27 +134,43 @@ export default function Home() {
         <div 
           className={cn(
             "absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm transition-opacity duration-500",
-            !logoVisible && "opacity-0 pointer-events-none"
+            !logoVisible && "opacity-0 pointer-events-none",
+            tripStep === 'driving' && "bg-transparent backdrop-blur-none"
           )}
         >
-          <Logo className="w-32 h-32" />
-          <p className="mt-4 text-lg font-semibold text-foreground">Hover or tap to begin</p>
+          <Logo id="animated-logo" className={cn(
+            "w-32 h-32 transition-all duration-1000 ease-in-out",
+            tripStep === 'driving' ? "opacity-100" : ""
+          )} />
+          <p className={cn(
+            "mt-4 text-lg font-semibold text-foreground",
+            tripStep === 'driving' && 'hidden'
+            )}>Hover or tap to begin</p>
         </div>
         
-        <div className={cn("absolute inset-0 top-auto bg-gradient-to-t from-black/80 to-transparent p-8 text-center transition-opacity duration-500", !logoVisible && "opacity-0")}>
+        <div className={cn("absolute inset-0 top-auto bg-gradient-to-t from-black/80 to-transparent p-8 text-center transition-opacity duration-500", tripStep !== 'initial' || !logoVisible ? "opacity-0" : "")}>
             <h1 className="text-4xl font-bold text-white">Let's get our next journey started!</h1>
         </div>
 
-        <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
-          <TripPlannerCard 
-            origin={origin}
-            destination={destination}
-            onOriginChange={setOrigin}
-            onDestinationChange={setDestination}
-            onPlanRoute={handlePlanRoute}
-            isRoutePlanning={isRoutePlanning}
-          />
-        </div>
+        {tripStep !== 'driving' && (
+           <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
+             <TripPlannerCard 
+               origin={origin}
+               destination={destination}
+               onOriginChange={setOrigin}
+               onDestinationChange={setDestination}
+               onPlanRoute={() => handlePlanRoute()}
+               isRoutePlanning={isRoutePlanning}
+               tripStep={tripStep}
+               onAddStop={handleAddStop}
+               onConfirmStops={() => setTripStep('summary')}
+               onStartTrip={handleStartTrip}
+               onReset={handleResetTrip}
+               waypoints={waypoints}
+               onEditStops={() => setTripStep('add-stops')}
+             />
+           </div>
+        )}
 
         <Sheet>
           <SheetTrigger asChild>

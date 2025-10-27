@@ -5,6 +5,7 @@ import type { ImgHTMLAttributes } from "react";
 export function Logo(props: ImgHTMLAttributes<HTMLImageElement>) {
   return (
     <Image
+      id={props.id}
       src="/logo.png"
       alt="RoadHog Logo"
       width={32}
