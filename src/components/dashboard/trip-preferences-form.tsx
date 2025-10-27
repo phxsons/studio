@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,78 +32,44 @@ const interestOptions = ["Relax", "Shopping", "Hiking", "Biking", "Water Sports"
 const lodgingOptions = ["Hotel", "RV Park", "Glamping", "Camping", "Free Places to Stay (e.g., Cracker Barrel)"];
 const membershipOptions = ["Military", "Elks Lodge", "KOA", "Harvest Host"];
 
-const CheckboxGroup = ({ name, options, control, otherFieldName }: { name: keyof PreferencesFormValues, options: string[], control: any, otherFieldName?: string }) => {
-    const [otherValue, setOtherValue] = useState('');
-    const [isOtherChecked, setIsOtherChecked] = useState(false);
-
+const CheckboxGroup = ({ name, options, control, other }: { name: keyof PreferencesFormValues, options: string[], control: any, other?: boolean }) => {
     return (
         <Controller
             control={control}
             name={name}
-            render={({ field }) => {
-                const handleOtherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-                    const oldVal = otherValue;
-                    const newV = e.target.value;
-                    setOtherValue(newV);
-
-                    if (isOtherChecked) {
-                        const currentValues = field.value ?? [];
-                        const withoutOld = currentValues.filter((v: string) => v !== oldVal);
-                        
-                        if (newV) {
-                           field.onChange([...withoutOld, newV]);
-                        } else {
-                           field.onChange(withoutOld);
-                        }
-                    }
-                };
-
-                const handleOtherCheckboxChange = (checked: boolean) => {
-                    setIsOtherChecked(checked);
-                    if (checked) {
-                        if (otherValue) {
-                            field.onChange([...(field.value ?? []), otherValue]);
-                        }
-                    } else {
-                        field.onChange((field.value ?? []).filter((v: string) => v !== otherValue));
-                    }
-                };
-                
-                return (
-                    <div className="space-y-2">
-                        {options.map((option) => (
-                            <div key={option} className="flex items-center gap-2">
-                                <Checkbox
-                                    id={`${name.toString()}-${option}`}
-                                    checked={field.value?.includes(option) ?? false}
-                                    onCheckedChange={(checked) => {
-                                        const newValue = checked
-                                            ? [...(field.value ?? []), option]
-                                            : (field.value ?? []).filter((v: string) => v !== option);
-                                        field.onChange(newValue);
-                                    }}
-                                />
-                                <Label htmlFor={`${name.toString()}-${option}`}>{option}</Label>
-                            </div>
-                        ))}
-                        {otherFieldName && (
-                             <div className="flex items-center gap-2">
-                                <Checkbox
-                                    id={`${name.toString()}-other`}
-                                    checked={isOtherChecked}
-                                    onCheckedChange={handleOtherCheckboxChange}
-                                />
-                                 <Input
-                                    placeholder="Other"
-                                    className="h-8"
-                                    value={otherValue}
-                                    onChange={handleOtherChange}
-                                />
-                            </div>
-                        )}
-                    </div>
-                )
-            }}
+            render={({ field }) => (
+                <div className="space-y-2">
+                    {options.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                            <Checkbox
+                                id={`${name.toString()}-${option}`}
+                                checked={field.value?.includes(option) ?? false}
+                                onCheckedChange={(checked) => {
+                                    const newValue = checked
+                                        ? [...(field.value ?? []), option]
+                                        : (field.value ?? []).filter((v: string) => v !== option);
+                                    field.onChange(newValue);
+                                }}
+                            />
+                            <Label htmlFor={`${name.toString()}-${option}`}>{option}</Label>
+                        </div>
+                    ))}
+                    {other && (
+                         <div className="flex items-center gap-2">
+                             <Input
+                                placeholder="Other"
+                                className="h-8"
+                                onBlur={(e) => {
+                                    const value = e.target.value.trim();
+                                    if (value && !(field.value ?? []).includes(value)) {
+                                        field.onChange([...(field.value ?? []), value]);
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
         />
     );
 };
@@ -138,7 +103,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
         <AccordionItem value="tripType">
           <AccordionTrigger>Trip Type</AccordionTrigger>
           <AccordionContent>
-            <CheckboxGroup name="tripType" options={tripTypeOptions} control={control} otherFieldName="otherTripType"/>
+            <CheckboxGroup name="tripType" options={tripTypeOptions} control={control} other />
             {renderError('tripType')}
           </AccordionContent>
         </AccordionItem>
@@ -146,7 +111,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
         <AccordionItem value="vehicleType">
           <AccordionTrigger>Vehicle Type</AccordionTrigger>
           <AccordionContent>
-             <CheckboxGroup name="vehicleType" options={vehicleTypeOptions} control={control} otherFieldName="otherVehicleType" />
+             <CheckboxGroup name="vehicleType" options={vehicleTypeOptions} control={control} other />
              {renderError('vehicleType')}
           </AccordionContent>
         </AccordionItem>
@@ -154,7 +119,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
         <AccordionItem value="interests">
           <AccordionTrigger>Points of Interest</AccordionTrigger>
           <AccordionContent>
-             <CheckboxGroup name="interests" options={interestOptions} control={control} otherFieldName="otherInterest" />
+             <CheckboxGroup name="interests" options={interestOptions} control={control} other />
              {renderError('interests')}
           </AccordionContent>
         </AccordionItem>
@@ -162,7 +127,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
         <AccordionItem value="lodgingPreferences">
           <AccordionTrigger>Lodging Preferences</AccordionTrigger>
           <AccordionContent>
-             <CheckboxGroup name="lodgingPreferences" options={lodgingOptions} control={control} otherFieldName="otherLodging" />
+             <CheckboxGroup name="lodgingPreferences" options={lodgingOptions} control={control} other />
              {renderError('lodgingPreferences')}
           </AccordionContent>
         </AccordionItem>
@@ -170,7 +135,7 @@ export default function TripPreferencesForm({ onSubmit, isSubmitting }: TripPref
          <AccordionItem value="lodgingMemberships">
           <AccordionTrigger>Lodging Memberships (Optional)</AccordionTrigger>
           <AccordionContent>
-             <CheckboxGroup name="lodgingMemberships" options={membershipOptions} control={control} otherFieldName="otherMembership" />
+             <CheckboxGroup name="lodgingMemberships" options={membershipOptions} control={control} other />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

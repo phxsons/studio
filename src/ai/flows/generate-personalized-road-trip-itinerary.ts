@@ -56,7 +56,7 @@ const prompt = ai.definePrompt({
   - Vehicle Type: {{#each vehicleType}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
   - Interests: {{#each interests}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
   - Lodging Preferences: {{#each lodgingPreferences}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
-  {{#if lodgingMemberships}}
+  {{#if lodgingMemberships.length}}
   - Lodging Memberships: {{#each lodgingMemberships}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}.
   {{/if}}
 
