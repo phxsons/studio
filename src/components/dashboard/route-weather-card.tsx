@@ -16,7 +16,7 @@ const iconMap: { [key: string]: ComponentType<LucideProps> } = {
     Cloudy: Cloudy,
     Wind: Wind,
     CloudRain: CloudRain,
-    Snow: Snowflake,
+    Snowflake: Snowflake,
     Zap: Zap,
     AlertTriangle: AlertTriangle,
 };

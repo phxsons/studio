@@ -22,7 +22,7 @@ const WeatherConditionSchema = z.object({
     location: z.string().describe('The city or area for the weather condition.'),
     temperature: z.number().describe('The temperature in Fahrenheit.'),
     condition: z.string().describe('A brief description of the weather (e.g., "Sunny", "Light Rain").'),
-    icon: z.enum(['Sun', 'Cloudy', 'Wind', 'CloudRain', 'Snow', 'Zap', 'AlertTriangle' ]).describe('An icon representing the weather condition.')
+    icon: z.enum(['Sun', 'Cloudy', 'Wind', 'CloudRain', 'Snowflake', 'Zap', 'AlertTriangle' ]).describe('An icon representing the weather condition.')
 });
 
 const WeatherInfoSchema = z.object({
@@ -46,7 +46,7 @@ const prompt = ai.definePrompt({
   
   Then, provide a list of specific weather conditions for key locations or segments of the trip (e.g., origin, destination, and major cities or waypoints in between).
   
-  For each condition, specify the location, temperature in Fahrenheit, a short description, and a suitable icon from the following list: Sun, Cloudy, Wind, CloudRain, Snow, Zap, AlertTriangle.
+  For each condition, specify the location, temperature in Fahrenheit, a short description, and a suitable icon from the following list: Sun, Cloudy, Wind, CloudRain, Snowflake, Zap, AlertTriangle.
   
   Generate realistic but varied weather data for the purpose of a demo.
   `,

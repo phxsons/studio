@@ -164,27 +164,6 @@ export default function TripPlannerCard({
     onPlanRoute();
   };
 
-  const handleNavigate = () => {
-    if (!origin || !destination) return;
-
-    const googleMapsUrl = new URL("https://www.google.com/maps/dir/");
-    googleMapsUrl.searchParams.append("api", "1");
-    googleMapsUrl.searchParams.append("origin", origin);
-    googleMapsUrl.searchParams.append("destination", destination);
-
-    const waypointStrings = waypoints
-      .map(wp => ('location' in wp && wp.location?.toString()) || '')
-      .filter(Boolean);
-    
-    if (waypointStrings.length > 0) {
-      googleMapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
-    }
-
-    window.open(googleMapsUrl.toString(), '_blank');
-    onStartTrip();
-  };
-
-
   return (
     <Card>
       <CardHeader>
@@ -280,7 +259,7 @@ export default function TripPlannerCard({
 
       {tripStep === 'summary' && (
         <CardFooter className="flex-col sm:flex-row gap-2">
-          <Button onClick={handleNavigate} className="w-full">
+          <Button onClick={onStartTrip} className="w-full">
             <Navigation className="mr-2 h-4 w-4"/>
             Navigate
           </Button>

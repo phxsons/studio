@@ -191,6 +191,28 @@ export default function Home() {
     getRouteExtras(origin, destination, waypoints);
   }
 
+  const handleNavigate = () => {
+    if (!origin || !destination) return;
+
+    const googleMapsUrl = new URL("https://www.google.com/maps/dir/");
+    googleMapsUrl.searchParams.append("api", "1");
+    googleMapsUrl.searchParams.append("origin", origin);
+    googleMapsUrl.searchParams.append("destination", destination);
+
+    const waypointStrings = waypoints
+      .map(wp => ('location' in wp && wp.location?.toString()) || '')
+      .filter(Boolean);
+    
+    if (waypointStrings.length > 0) {
+      googleMapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
+    }
+
+    googleMapsUrl.searchParams.append("travelmode", "driving");
+
+    window.open(googleMapsUrl.toString(), '_blank');
+    onStartTrip();
+  };
+
   if (loadError) {
     return (
       <AppShell title="RoadHog">
@@ -259,7 +281,7 @@ export default function Home() {
                tripStep={tripStep}
                onAddStop={handleAddStop}
                onConfirmStops={handleConfirmStops}
-               onStartTrip={handleStartTrip}
+               onStartTrip={handleNavigate}
                onReset={handleResetTrip}
                waypoints={waypoints}
                onEditStops={() => setTripStep('add-stops')}
