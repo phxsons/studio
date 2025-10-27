@@ -61,7 +61,19 @@ export default function Home() {
             });
           },
           (error) => {
-            console.error(`Error getting user location: ${error.message} (code: ${error.code})`);
+            let errorMessage = `Error getting user location: ${error.message}`;
+            switch (error.code) {
+              case error.PERMISSION_DENIED:
+                errorMessage = "User denied the request for Geolocation.";
+                break;
+              case error.POSITION_UNAVAILABLE:
+                errorMessage = "Location information is unavailable.";
+                break;
+              case error.TIMEOUT:
+                errorMessage = "The request to get user location timed out.";
+                break;
+            }
+            console.error(`${errorMessage} (code: ${error.code})`);
           },
           { enableHighAccuracy: true }
         );
@@ -281,7 +293,7 @@ export default function Home() {
                     <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
                     <PoiCarousel />
                   </div>
-                  <UpcomingStopsCard />
+                  <UpcomingStopsCard stops={[]} isLoading={false} />
                 </div>
               </ScrollArea>
           </SheetContent>
