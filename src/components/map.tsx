@@ -1,12 +1,16 @@
 "use client";
 
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, DirectionsRenderer } from "@react-google-maps/api";
 import { useMemo } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { AlertTriangle } from "lucide-react";
 
-export default function Map() {
+interface MapProps {
+  directionsResponse: google.maps.DirectionsResult | null;
+}
+
+export default function Map({ directionsResponse }: MapProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ""
@@ -42,7 +46,9 @@ export default function Map() {
       center={center}
       zoom={4}
     >
-      {/* Child components, like markers, info windows, etc. */}
+      {directionsResponse && (
+        <DirectionsRenderer directions={directionsResponse} />
+      )}
     </GoogleMap>
   );
 }

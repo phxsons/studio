@@ -16,6 +16,31 @@ import TripPlannerCard from "@/components/dashboard/trip-planner-card";
 
 export default function Home() {
   const [logoVisible, setLogoVisible] = useState(true);
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+  const [isRoutePlanning, setIsRoutePlanning] = useState(false);
+
+  const handlePlanRoute = async () => {
+    if (!origin || !destination) {
+      return;
+    }
+    setIsRoutePlanning(true);
+    const directionsService = new google.maps.DirectionsService();
+    try {
+      const results = await directionsService.route({
+        origin: origin,
+        destination: destination,
+        travelMode: google.maps.TravelMode.DRIVING,
+      });
+      setDirectionsResponse(results);
+    } catch (e) {
+      console.error("Directions request failed", e);
+      // You could add a user-facing error message here
+    } finally {
+      setIsRoutePlanning(false);
+    }
+  };
 
   return (
     <AppShell title="RoadHog">
@@ -24,7 +49,7 @@ export default function Home() {
         onMouseEnter={() => setLogoVisible(false)}
         onTouchStart={() => setLogoVisible(false)}
       >
-        <Map />
+        <Map directionsResponse={directionsResponse} />
 
         <div 
           className={cn(
@@ -53,7 +78,14 @@ export default function Home() {
               </SheetHeader>
               <ScrollArea className="h-[calc(100%-4rem)]">
                 <div className="space-y-6 p-4">
-                  <TripPlannerCard />
+                  <TripPlannerCard 
+                    origin={origin}
+                    destination={destination}
+                    onOriginChange={setOrigin}
+                    onDestinationChange={setDestination}
+                    onPlanRoute={handlePlanRoute}
+                    isRoutePlanning={isRoutePlanning}
+                  />
                   <WeatherCard />
                   <div>
                     <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
