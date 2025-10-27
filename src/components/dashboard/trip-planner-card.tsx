@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, Rocket, RotateCcw, Sparkles, PlusCircle } from "lucide-react";
+import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, Rocket, RotateCcw, Sparkles, PlusCircle, Navigation } from "lucide-react";
 import { Autocomplete } from "@react-google-maps/api";
 import { Separator } from "../ui/separator";
 import type { StopType, TripStep } from "@/app/page";
@@ -164,6 +164,28 @@ export default function TripPlannerCard({
     onPlanRoute();
   };
 
+  const handleNavigate = () => {
+    if (!origin || !destination) return;
+
+    const mapsUrl = new URL("https://www.google.com/maps/dir/?api=1");
+    mapsUrl.searchParams.append("origin", origin);
+    mapsUrl.searchParams.append("destination", destination);
+
+    const waypointStrings = waypoints
+      .map(wp => ('location' in wp && wp.location?.toString()) || '')
+      .filter(Boolean);
+    
+    if (waypointStrings.length > 0) {
+      mapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
+    }
+    
+    mapsUrl.searchParams.append("travelmode", "driving");
+
+    window.open(mapsUrl, '_blank');
+    onStartTrip();
+  };
+
+
   return (
     <Card>
       <CardHeader>
@@ -259,9 +281,9 @@ export default function TripPlannerCard({
 
       {tripStep === 'summary' && (
         <CardFooter className="flex-col sm:flex-row gap-2">
-          <Button onClick={onStartTrip} className="w-full">
-            <Rocket className="mr-2 h-4 w-4"/>
-            Go!
+          <Button onClick={handleNavigate} className="w-full">
+            <Navigation className="mr-2 h-4 w-4"/>
+            Navigate
           </Button>
           <Button onClick={onEditStops} variant="outline" className="w-full">
             <Edit2 className="mr-2 h-4 w-4"/>
