@@ -68,110 +68,156 @@ export default function TripPlannerCard({
     onPlanRoute(preferences);
   };
   
-  return (
-    <Card>
-      <form onSubmit={handleInitialPlan}>
-        <CardHeader>
-          <CardTitle>Trip Planner</CardTitle>
-          {tripStep === 'initial' && <CardDescription>Enter your destination to map your journey.</CardDescription>}
-          {tripStep === 'startPointChoice' && <CardDescription>How are you planning to travel?</CardDescription>}
-          {tripStep === 'preferences' && <CardDescription>Customize your trip to get AI-powered recommendations.</CardDescription>}
-          {tripStep === 'generating' && <CardDescription>Our AI is crafting your personalized itinerary...</CardDescription>}
-          {tripStep === 'summary' && <CardDescription>Your AI-generated road trip is ready!</CardDescription>}
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          
-          {(tripStep === 'initial' || tripStep === 'preferences' || tripStep === 'startPointChoice') && (
+  const renderContent = () => {
+    switch (tripStep) {
+      case 'initial':
+        return (
+          <>
+            <div className="grid gap-2">
+              <Label htmlFor="start-point">Starting Point</Label>
+              <Autocomplete
+                onLoad={(ref) => originAutocompleteRef.current = ref}
+                onPlaceChanged={handleOriginPlaceChanged}
+                isEnabled={false}
+              >
+                <Input
+                  id="start-point"
+                  value={origin}
+                  onChange={(e) => onOriginChange(e.target.value)}
+                  readOnly
+                  className="bg-muted"
+                />
+              </Autocomplete>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="destination">Destination</Label>
+              <Autocomplete
+                onLoad={(ref) => destinationAutocompleteRef.current = ref}
+                onPlaceChanged={handleDestinationPlaceChanged}
+                isEnabled={true}
+              >
+                <Input
+                  id="destination"
+                  placeholder="e.g., San Francisco, CA"
+                  value={destination}
+                  onChange={(e) => onDestinationChange(e.target.value)}
+                />
+              </Autocomplete>
+            </div>
+            <Button type="submit" disabled={isRoutePlanning || !destination}>
+              {isRoutePlanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Route className="mr-2 h-4 w-4" />}
+              {isRoutePlanning ? 'Validating...' : 'Plan Route'}
+            </Button>
+          </>
+        );
+
+      case 'startPointChoice':
+         return (
+           <>
+              <div className="grid gap-2">
+                <Label htmlFor="start-point">Starting Point</Label>
+                <Input id="start-point" value={origin} readOnly className="bg-muted" />
+              </div>
+               <div className="grid gap-2">
+                <Label htmlFor="destination">Destination</Label>
+                <Input id="destination" value={destination} readOnly className="bg-muted" />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                  <Button onClick={onProceedToPreferences}>
+                      <MapPin className="mr-2 h-4 w-4" /> Let's Go Now
+                  </Button>
+                  <Button onClick={onProceedToPreferences} variant="outline">
+                      <Calendar className="mr-2 h-4 w-4" /> Plan for Later
+                  </Button>
+              </div>
+           </>
+        );
+
+      case 'preferences':
+        return (
             <>
               <div className="grid gap-2">
                 <Label htmlFor="start-point">Starting Point</Label>
-                <Autocomplete
+                 <Autocomplete
                   onLoad={(ref) => originAutocompleteRef.current = ref}
                   onPlaceChanged={handleOriginPlaceChanged}
-                  isEnabled={tripStep === 'startPointChoice'}
+                  isEnabled={true}
                 >
                   <Input
                     id="start-point"
                     value={origin}
                     onChange={(e) => onOriginChange(e.target.value)}
-                    readOnly={tripStep !== 'startPointChoice'}
-                    className={tripStep !== 'startPointChoice' ? "bg-muted" : ""}
                   />
                 </Autocomplete>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="destination">Destination</Label>
-                <Autocomplete
-                  onLoad={(ref) => destinationAutocompleteRef.current = ref}
-                  onPlaceChanged={handleDestinationPlaceChanged}
-                  isEnabled={tripStep === 'initial'}
-                >
-                  <Input
-                    id="destination"
-                    placeholder="e.g., San Francisco, CA"
-                    value={destination}
-                    onChange={(e) => onDestinationChange(e.target.value)}
-                    readOnly={tripStep !== 'initial'}
-                    className={tripStep !== 'initial' ? "bg-muted" : ""}
-                  />
-                </Autocomplete>
+                <Input id="destination" value={destination} readOnly className="bg-muted" />
+              </div>
+               <div>
+                <div className="flex items-center gap-4 my-4">
+                    <Button onClick={() => onStartTrip(true)} className="w-full" variant="outline">
+                        <Navigation className="mr-2 h-4 w-4" /> Just Navigate
+                    </Button>
+                    <p className="text-sm text-muted-foreground">OR</p>
+                </div>
+                <TripPreferencesForm onSubmit={handlePreferencesSubmit} isSubmitting={isRoutePlanning} />
               </div>
             </>
-          )}
+        );
+      
+      case 'generating':
+        return (
+          <div className="flex flex-col items-center justify-center text-center space-y-4 h-64">
+              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+              <p className="font-bold text-xl">We're Going Hog Wild</p>
+          </div>
+        );
 
-          {tripStep === 'initial' && (
-            <Button type="submit" disabled={isRoutePlanning || !destination}>
-              {isRoutePlanning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Route className="mr-2 h-4 w-4" />}
-              {isRoutePlanning ? 'Validating...' : 'Plan Route'}
-            </Button>
-          )}
+      case 'summary':
+        return itinerary && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg">Your Itinerary:</h3>
+            <ScrollArea className="h-64">
+              <ul className="space-y-4 pr-4">
+                  {itinerary.itinerary.map((stop, index) => (
+                      <li key={index} className="pb-4 border-b last:border-b-0">
+                        <p className="font-semibold">{stop.name}</p>
+                        <p className="text-sm text-muted-foreground">{stop.location}</p>
+                        <p className="text-sm mt-1">{stop.activity}</p>
+                      </li>
+                  ))}
+              </ul>
+            </ScrollArea>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
-          {tripStep === 'startPointChoice' && (
-            <div className="grid sm:grid-cols-2 gap-2">
-                <Button onClick={onProceedToPreferences} variant="outline">
-                    <MapPin className="mr-2 h-4 w-4" /> Let's Go Now
-                </Button>
-                <Button onClick={onProceedToPreferences} variant="outline">
-                    <Calendar className="mr-2 h-4 w-4" /> Plan for Later
-                </Button>
-            </div>
-          )}
+  const getCardDescription = () => {
+     switch (tripStep) {
+        case 'initial': return "Enter your destination to map your journey.";
+        case 'startPointChoice': return "How are you planning to travel?";
+        case 'preferences': return "Customize your trip to get AI-powered recommendations.";
+        case 'generating': return "Our AI is crafting your personalized itinerary...";
+        case 'summary': return "Your AI-generated road trip is ready!";
+        default: return "";
+     }
+  }
 
-          {tripStep === 'preferences' && (
-            <div>
-              <div className="flex items-center gap-4 my-4">
-                  <Button onClick={() => onStartTrip(true)} className="w-full" variant="outline">
-                      <Navigation className="mr-2 h-4 w-4" /> Just Navigate
-                  </Button>
-                  <p className="text-sm text-muted-foreground">OR</p>
-              </div>
-              <TripPreferencesForm onSubmit={handlePreferencesSubmit} isSubmitting={isRoutePlanning} />
-            </div>
-          )}
 
-          {tripStep === 'generating' && (
-             <div className="flex flex-col items-center justify-center text-center space-y-4 h-64">
-                <Loader2 className="h-16 w-16 text-primary animate-spin" />
-                <p className="font-bold text-xl">We're Going Hog Wild</p>
-             </div>
-          )}
-
-          {tripStep === 'summary' && itinerary && (
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Your Itinerary:</h3>
-                <ScrollArea className="h-64">
-                  <ul className="space-y-4 pr-4">
-                      {itinerary.itinerary.map((stop, index) => (
-                          <li key={index} className="pb-4 border-b last:border-b-0">
-                            <p className="font-semibold">{stop.name}</p>
-                            <p className="text-sm text-muted-foreground">{stop.location}</p>
-                            <p className="text-sm mt-1">{stop.activity}</p>
-                          </li>
-                      ))}
-                  </ul>
-                </ScrollArea>
-              </div>
-          )}
+  return (
+    <Card>
+      <form onSubmit={handleInitialPlan}>
+        <CardHeader>
+          <CardTitle>Trip Planner</CardTitle>
+          <CardDescription>{getCardDescription()}</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {renderContent()}
         </CardContent>
 
         {tripStep === 'summary' && (
@@ -199,3 +245,5 @@ export default function TripPlannerCard({
     </Card>
   );
 }
+
+    
