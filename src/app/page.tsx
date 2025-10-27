@@ -5,7 +5,6 @@ import AppShell from "@/components/app-shell";
 import Map from "@/components/map";
 import PoiCarousel from "@/components/dashboard/poi-carousel";
 import UpcomingStopsCard from "@/components/dashboard/upcoming-stops-card";
-import WeatherCard from "@/components/dashboard/weather-card";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { PanelRight } from "lucide-react";
@@ -19,6 +18,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { suggestStopsAlongRoute, type SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
 import { userProfile } from "@/lib/data";
+import { getWeatherForRoute, type WeatherInfo } from "@/ai/flows/get-weather-for-route";
+import { getTrafficForRoute, type TrafficAlert } from "@/ai/flows/get-traffic-for-route";
+import RouteWeatherCard from "@/components/dashboard/route-weather-card";
+import TrafficAlertsCard from "@/components/dashboard/traffic-alerts-card";
 
 const libraries: ("places" | "maps")[] = ["places", "maps"];
 
@@ -35,6 +38,9 @@ export default function Home() {
   const [waypoints, setWaypoints] = useState<google.maps.DirectionsWaypoint[]>([]);
   const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [weather, setWeather] = useState<WeatherInfo | null>(null);
+  const [traffic, setTraffic] = useState<TrafficAlert[] | null>(null);
+  const [isLoadingExtras, setIsLoadingExtras] = useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -69,6 +75,23 @@ export default function Home() {
       }
     }
   }, [isLoaded, tripStep]);
+
+  const getRouteExtras = async (routeOrigin: string, routeDestination: string, routeWaypoints: google.maps.DirectionsWaypoint[]) => {
+    setIsLoadingExtras(true);
+    const waypointStrings = routeWaypoints.map(wp => ('location' in wp && wp.location?.toString()) || '').filter(Boolean);
+    try {
+      const [weatherResponse, trafficResponse] = await Promise.all([
+        getWeatherForRoute({ origin: routeOrigin, destination: routeDestination, waypoints: waypointStrings }),
+        getTrafficForRoute({ origin: routeOrigin, destination: routeDestination, waypoints: waypointStrings })
+      ]);
+      setWeather(weatherResponse);
+      setTraffic(trafficResponse.alerts);
+    } catch (error) {
+      console.error("Failed to get weather or traffic data:", error);
+    } finally {
+      setIsLoadingExtras(false);
+    }
+  };
 
 
   const handlePlanRoute = async (newWaypoints: google.maps.DirectionsWaypoint[] = waypoints) => {
@@ -149,6 +172,8 @@ export default function Home() {
     setWaypoints([]);
     setSuggestions([]);
     setTripStep('initial');
+    setWeather(null);
+    setTraffic(null);
   }
 
   const handleAddSuggestion = (suggestion: SuggestedStop) => {
@@ -159,6 +184,11 @@ export default function Home() {
     // Remove the suggestion from the list
     setSuggestions(prev => prev.filter(s => s.name !== suggestion.name));
     handlePlanRoute(newWaypoints);
+  }
+
+  const handleConfirmStops = () => {
+    setTripStep('summary');
+    getRouteExtras(origin, destination, waypoints);
   }
 
   if (loadError) {
@@ -228,7 +258,7 @@ export default function Home() {
                isRoutePlanning={isRoutePlanning}
                tripStep={tripStep}
                onAddStop={handleAddStop}
-               onConfirmStops={() => setTripStep('summary')}
+               onConfirmStops={handleConfirmStops}
                onStartTrip={handleStartTrip}
                onReset={handleResetTrip}
                waypoints={waypoints}
@@ -239,6 +269,14 @@ export default function Home() {
              />
            </div>
         )}
+
+        {(tripStep === 'summary' || tripStep === 'driving') && (
+          <div className="absolute top-4 right-4 z-10 w-full max-w-sm space-y-4">
+             <RouteWeatherCard weather={weather} isLoading={isLoadingExtras} />
+             <TrafficAlertsCard alerts={traffic} isLoading={isLoadingExtras} />
+          </div>
+        )}
+
 
         <Sheet>
           <SheetTrigger asChild>
@@ -253,7 +291,6 @@ export default function Home() {
               </SheetHeader>
               <ScrollArea className="h-[calc(100%-4rem)]">
                 <div className="space-y-6 p-4">
-                  <WeatherCard />
                   <div>
                     <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
                     <PoiCarousel />

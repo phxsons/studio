@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, Rocket, RotateCcw, Sparkles, PlusCircle, Navigation } from "lucide-react";
+import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, RotateCcw, Sparkles, PlusCircle, Navigation } from "lucide-react";
 import { Autocomplete } from "@react-google-maps/api";
 import { Separator } from "../ui/separator";
 import type { StopType, TripStep } from "@/app/page";

@@ -17,3 +17,5 @@ import '@/ai/flows/generate-personalized-road-trip-itinerary.ts';
 import '@/ai/flows/suggest-alternative-poi.ts';
 import '@/ai/flows/suggest-stops-along-route.ts';
 import '@/ai/flows/find-user-location.ts';
+import '@/ai/flows/get-weather-for-route.ts';
+import '@/ai/flows/get-traffic-for-route.ts';
