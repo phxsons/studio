@@ -1,28 +1,20 @@
-import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { placeholderImages } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import Map from "@/components/map";
 
-export default function MapCard({ className }: { className?: string }) {
-  const mapImage = placeholderImages.find(p => p.id === 'map-route');
+interface MapCardProps {
+    className?: string;
+    directionsResponse: google.maps.DirectionsResult | null;
+}
 
+export default function MapCard({ className, directionsResponse }: MapCardProps) {
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader>
         <CardTitle>Current Route</CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        {mapImage && (
-          <div className="relative aspect-video w-full">
-            <Image
-              src={mapImage.imageUrl}
-              alt={mapImage.description}
-              fill
-              className="object-cover"
-              data-ai-hint={mapImage.imageHint}
-            />
-          </div>
-        )}
+      <CardContent className="p-0 aspect-video">
+        <Map directionsResponse={directionsResponse} />
       </CardContent>
     </Card>
   );
