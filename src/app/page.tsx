@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/app-shell";
 import Map from "@/components/map";
 import PoiCarousel from "@/components/dashboard/poi-carousel";
@@ -41,6 +41,34 @@ export default function Home() {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
+  
+  useEffect(() => {
+    if (isLoaded && tripStep === 'initial') {
+      // Get user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const geocoder = new window.google.maps.Geocoder();
+            const latLng = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+            geocoder.geocode({ location: latLng }, (results, status) => {
+              if (status === 'OK' && results && results[0]) {
+                setOrigin(results[0].formatted_address);
+              } else {
+                console.error('Geocoder failed due to: ' + status);
+              }
+            });
+          },
+          (error) => {
+            console.error('Error getting user location:', error);
+          }
+        );
+      }
+    }
+  }, [isLoaded, tripStep]);
+
 
   const handlePlanRoute = async (newWaypoints: google.maps.DirectionsWaypoint[] = waypoints) => {
     if (!origin || !destination) {
