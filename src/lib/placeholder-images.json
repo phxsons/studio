@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-avatar",
+      "description": "User avatar placeholder",
+      "imageUrl": "https://images.unsplash.com/photo-1521146764736-56c929d59c83?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwZXJzb24lMjBmYWNlfGVufDB8fHx8MTc2MTQxMDcyNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person face"
+    },
+    {
+      "id": "map-route",
+      "description": "Placeholder image of a map with a route",
+      "imageUrl": "https://images.unsplash.com/photo-1694580511925-bfca6bb34020?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYXAlMjByb3V0ZXxlbnwwfHx8fDE3NjE0NjUwMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "map route"
+    },
+    {
+      "id": "poi-festival",
+      "description": "Placeholder for a music festival",
+      "imageUrl": "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bXVzaWMlMjBmZXN0aXZhbHxlbnwwfHx8fDE3NjE1MjAwNTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "music festival"
+    },
+    {
+      "id": "poi-restaurant",
+      "description": "Placeholder for a restaurant",
+      "imageUrl": "https://images.unsplash.com/photo-1616671285410-2a676a9a433d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxnb3VybWV0JTIwZm9vZHxlbnwwfHx8fDE3NjE0OTU0NzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gourmet food"
+    },
+    {
+      "id": "poi-hotel",
+      "description": "Placeholder for a hotel",
+      "imageUrl": "https://images.unsplash.com/photo-1573052905904-34ad8c27f0cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxob3RlbCUyMGludGVyaW9yfGVufDB8fHx8MTc2MTUyNjY4M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "hotel interior"
+    },
+    {
+      "id": "poi-hike",
+      "description": "Placeholder for a hiking trail",
+      "imageUrl": "https://images.unsplash.com/photo-1673292158988-c85845834007?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxtb3VudGFpbiUyMHRyYWlsfGVufDB8fHx8MTc2MTQ3MjIyM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "mountain trail"
+    },
+    {
+      "id": "poi-camping",
+      "description": "Placeholder for a camping spot",
+      "imageUrl": "https://images.unsplash.com/photo-1600075983879-3b1b19bdff27?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cml2ZXJzaWRlJTIwY2FtcGluZ3xlbnwwfHx8fDE3NjE1MjY2ODN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "riverside camping"
+    }
+  ]
 }
