@@ -40,49 +40,8 @@ export default function RoadtripPage() {
     if (!isLoaded) return;
 
     const getRouteExtras = async () => {
-      setIsLoading(true);
-      // Simulate a route for demo purposes
-      const demoRoute = {
-        origin: "Denver, CO",
-        destination: "San Francisco, CA",
-        waypoints: ["Moab, UT", "Las Vegas, NV"],
-      };
-
-      try {
-        const directionsService = new google.maps.DirectionsService();
-        const results = await directionsService.route({
-          origin: demoRoute.origin,
-          destination: demoRoute.destination,
-          travelMode: google.maps.TravelMode.DRIVING,
-          waypoints: demoRoute.waypoints.map(wp => ({ location: wp, stopover: true })),
-          optimizeWaypoints: true,
-        });
-        setDirectionsResponse(results);
-
-        if (results.routes && results.routes[0]) {
-          const routeLegs = results.routes[0].legs;
-          const formattedStops: Stop[] = routeLegs.slice(0, -1).map((leg, index) => ({
-            id: `stop-${index}`,
-            name: leg.end_address.split(',')[0],
-            location: leg.end_address,
-            icon: stopIcons[index % stopIcons.length],
-          }));
-          setStops(formattedStops);
-        }
-
-        const [weatherResponse, trafficResponse, destinationResponse] = await Promise.all([
-          getWeatherForRoute(demoRoute),
-          getTrafficForRoute(demoRoute),
-          suggestDestinations()
-        ]);
-        setWeather(weatherResponse);
-        setTraffic(trafficResponse.alerts);
-        setSuggestedDestinations(destinationResponse.destinations);
-      } catch (error) {
-        console.error("Failed to get route data:", error);
-      } finally {
-        setIsLoading(false);
-      }
+      // Intentionally disabled as per user request
+      setIsLoading(false);
     };
 
     getRouteExtras();
