@@ -17,6 +17,8 @@ import { useJsApiLoader } from "@react-google-maps/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { suggestStopsAlongRoute, type SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
+import { userProfile } from "@/lib/data";
 
 const libraries: ("places" | "maps")[] = ["places", "maps"];
 
@@ -31,6 +33,8 @@ export default function Home() {
   const [isRoutePlanning, setIsRoutePlanning] = useState(false);
   const [tripStep, setTripStep] = useState<TripStep>('initial');
   const [waypoints, setWaypoints] = useState<google.maps.DirectionsWaypoint[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
+  const [isSuggesting, setIsSuggesting] = useState(false);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
@@ -43,6 +47,7 @@ export default function Home() {
       return;
     }
     setIsRoutePlanning(true);
+    setSuggestions([]);
     const directionsService = new google.maps.DirectionsService();
     try {
       const results = await directionsService.route({
@@ -55,11 +60,31 @@ export default function Home() {
       setDirectionsResponse(results);
       if (tripStep === 'initial') {
         setTripStep('add-stops');
+        getSuggestions(newWaypoints);
       }
     } catch (e) {
       console.error("Directions request failed", e);
     } finally {
       setIsRoutePlanning(false);
+    }
+  };
+
+  const getSuggestions = async (currentWaypoints: google.maps.DirectionsWaypoint[]) => {
+    setIsSuggesting(true);
+    try {
+      const waypointStrings = currentWaypoints.map(wp => ('location' in wp && wp.location?.toString()) || '').filter(Boolean);
+      const result = await suggestStopsAlongRoute({
+        origin,
+        destination,
+        waypoints: waypointStrings,
+        interests: userProfile.interests,
+        vehicleDetails: userProfile.vehicle,
+      });
+      setSuggestions(result.suggestions);
+    } catch (error) {
+      console.error("Failed to get suggestions:", error);
+    } finally {
+      setIsSuggesting(false);
     }
   };
   
@@ -73,19 +98,19 @@ export default function Home() {
     const newWaypoint = { location: stop, stopover: true };
     const newWaypoints = [...waypoints, newWaypoint];
     setWaypoints(newWaypoints);
-    handlePlanRoute(newWaypoints); // Re-plan route with new stop
+    handlePlanRoute(newWaypoints);
   };
   
   const handleStartTrip = () => {
     setTripStep('driving');
-    setLogoVisible(true); // Re-show for animation
+    setLogoVisible(true);
     setTimeout(() => {
         const logoEl = document.getElementById('animated-logo');
         if (logoEl) {
             logoEl.classList.add('-translate-x-[200vw]', 'rotate-[-360deg]');
         }
     }, 100);
-    setTimeout(() => setLogoVisible(false), 1500); // Hide after animation
+    setTimeout(() => setLogoVisible(false), 1500);
   };
 
   const handleResetTrip = () => {
@@ -93,7 +118,18 @@ export default function Home() {
     setDestination('');
     setDirectionsResponse(null);
     setWaypoints([]);
+    setSuggestions([]);
     setTripStep('initial');
+  }
+
+  const handleAddSuggestion = (suggestion: SuggestedStop) => {
+    const stopString = `${suggestion.name}, ${suggestion.location}`;
+    const newWaypoint = { location: stopString, stopover: true };
+    const newWaypoints = [...waypoints, newWaypoint];
+    setWaypoints(newWaypoints);
+    // Remove the suggestion from the list
+    setSuggestions(prev => prev.filter(s => s.name !== suggestion.name));
+    handlePlanRoute(newWaypoints);
   }
 
   if (loadError) {
@@ -168,6 +204,9 @@ export default function Home() {
                onReset={handleResetTrip}
                waypoints={waypoints}
                onEditStops={() => setTripStep('add-stops')}
+               suggestions={suggestions}
+               onAddSuggestion={handleAddSuggestion}
+               isSuggesting={isSuggesting}
              />
            </div>
         )}

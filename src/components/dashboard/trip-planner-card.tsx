@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, Rocket, RotateCcw } from "lucide-react";
+import { Loader2, Route, Fuel, Calendar, Hotel, Edit2, Rocket, RotateCcw, Sparkles, PlusCircle } from "lucide-react";
 import { Autocomplete } from "@react-google-maps/api";
 import { Separator } from "../ui/separator";
 import type { StopType, TripStep } from "@/app/page";
+import type { SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
+import { Badge } from "../ui/badge";
+import { ScrollArea } from "../ui/scroll-area";
+import { Skeleton } from "../ui/skeleton";
 
 interface TripPlannerCardProps {
   origin: string;
@@ -24,6 +28,9 @@ interface TripPlannerCardProps {
   onReset: () => void;
   waypoints: google.maps.DirectionsWaypoint[];
   onEditStops: () => void;
+  suggestions: SuggestedStop[];
+  onAddSuggestion: (suggestion: SuggestedStop) => void;
+  isSuggesting: boolean;
 }
 
 const StopInput = ({ type, onAdd }: { type: StopType; onAdd: (stop: string, type: StopType) => void }) => {
@@ -79,6 +86,44 @@ const StopInput = ({ type, onAdd }: { type: StopType; onAdd: (stop: string, type
   );
 };
 
+const Suggestions = ({ suggestions, onAdd, isSuggesting }: { suggestions: SuggestedStop[], onAdd: (suggestion: SuggestedStop) => void, isSuggesting: boolean }) => {
+  if (isSuggesting) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    )
+  }
+
+  if (suggestions.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-4">No suggestions at this time.</p>;
+  }
+
+  return (
+    <ScrollArea className="h-48">
+      <div className="space-y-2 pr-4">
+        {suggestions.map((suggestion, index) => (
+          <div key={index} className="p-2 border rounded-lg bg-background/50 text-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-semibold">{suggestion.name}</p>
+                <p className="text-muted-foreground text-xs">{suggestion.location}</p>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => onAdd(suggestion)} title={`Add ${suggestion.name} to trip`}>
+                <PlusCircle className="w-4 h-4" />
+              </Button>
+            </div>
+            <p className="mt-1 text-muted-foreground">{suggestion.description}</p>
+            <Badge variant="outline" className="mt-2 capitalize">{suggestion.type}</Badge>
+          </div>
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
 export default function TripPlannerCard({
   origin,
   destination,
@@ -92,7 +137,10 @@ export default function TripPlannerCard({
   onStartTrip,
   onReset,
   waypoints,
-  onEditStops
+  onEditStops,
+  suggestions,
+  onAddSuggestion,
+  isSuggesting,
 }: TripPlannerCardProps) {
   const originAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const destinationAutocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -121,7 +169,7 @@ export default function TripPlannerCard({
       <CardHeader>
         <CardTitle>Trip Planner</CardTitle>
         {tripStep === 'initial' && <CardDescription>Enter your start and end points to map your journey.</CardDescription>}
-        {tripStep === 'add-stops' && <CardDescription>Would you like to add gas, events, or overnight stays to your trip?</CardDescription>}
+        {tripStep === 'add-stops' && <CardDescription>Add stops or see AI-powered suggestions for your route.</CardDescription>}
         {tripStep === 'summary' && <CardDescription>Here is your trip summary. Ready to hit the road?</CardDescription>}
       </CardHeader>
       <CardContent>
@@ -170,6 +218,16 @@ export default function TripPlannerCard({
         {tripStep === 'add-stops' && (
           <div className="grid gap-4 mt-4">
             <Separator />
+             <div className="space-y-1">
+                <h3 className="font-semibold flex items-center gap-2"><Sparkles className="text-accent" /> AI Suggestions</h3>
+                <p className="text-sm text-muted-foreground">Stops recommended just for you.</p>
+            </div>
+            <Suggestions suggestions={suggestions} onAdd={onAddSuggestion} isSuggesting={isSuggesting} />
+            <Separator />
+            <div className="space-y-1">
+                <h3 className="font-semibold">Add Manual Stops</h3>
+                <p className="text-sm text-muted-foreground">Know exactly where you want to go?</p>
+            </div>
             <StopInput type="gas" onAdd={onAddStop} />
             <StopInput type="event" onAdd={onAddStop} />
             <StopInput type="lodging" onAdd={onAddStop} />

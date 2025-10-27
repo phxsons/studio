@@ -1,6 +1,18 @@
-import { config } from 'dotenv';
-config();
+'use server';
+/**
+ * @fileOverview A development file for registering Genkit plugins and flows.
+ */
 
+import {genkit, Plugin} from 'genkit';
+import {googleAI} from '@genkit-ai/google-genai';
+
+// Initialize Genkit with the Google AI plugin.
+export const ai = genkit({
+  plugins: [googleAI()],
+  logLevel: 'debug',
+  enableTracing: true,
+});
 import '@/ai/flows/summarize-poi-reviews.ts';
 import '@/ai/flows/generate-personalized-road-trip-itinerary.ts';
 import '@/ai/flows/suggest-alternative-poi.ts';
+import '@/ai/flows/suggest-stops-along-route.ts';
