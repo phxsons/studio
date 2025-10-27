@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import AppShell from "@/components/app-shell";
 import MapCard from "@/components/dashboard/map-card";
-import PoiCarousel from "@/components/dashboard/poi-carousel";
 import UpcomingStopsCard from "@/components/dashboard/upcoming-stops-card";
 import RouteWeatherCard from "@/components/dashboard/route-weather-card";
 import TrafficAlertsCard from "@/components/dashboard/traffic-alerts-card";
@@ -16,6 +15,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import type { Stop } from '@/lib/types';
 import { Mountain, Tent, Music, Utensils } from 'lucide-react';
+import SuggestedDestinationsCard from '@/components/dashboard/suggested-destinations-card';
+import { suggestDestinations, type SuggestedDestination } from '@/ai/flows/suggest-destinations';
 
 const libraries: ('places' | 'maps')[] = ['places', 'maps'];
 
@@ -24,6 +25,7 @@ const stopIcons = [Mountain, Tent, Music, Utensils];
 export default function RoadtripPage() {
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
   const [traffic, setTraffic] = useState<TrafficAlert[] | null>(null);
+  const [suggestedDestinations, setSuggestedDestinations] = useState<SuggestedDestination[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
   const [stops, setStops] = useState<Stop[]>([]);
@@ -68,12 +70,14 @@ export default function RoadtripPage() {
           setStops(formattedStops);
         }
 
-        const [weatherResponse, trafficResponse] = await Promise.all([
+        const [weatherResponse, trafficResponse, destinationResponse] = await Promise.all([
           getWeatherForRoute(demoRoute),
-          getTrafficForRoute(demoRoute)
+          getTrafficForRoute(demoRoute),
+          suggestDestinations()
         ]);
         setWeather(weatherResponse);
         setTraffic(trafficResponse.alerts);
+        setSuggestedDestinations(destinationResponse.destinations);
       } catch (error) {
         console.error("Failed to get route data:", error);
       } finally {
@@ -131,8 +135,7 @@ export default function RoadtripPage() {
         </div>
         
         <div className="md:col-span-2 lg:col-span-4">
-          <h2 className="text-xl font-bold tracking-tight mb-4">Interest-Based Discovery</h2>
-          <PoiCarousel />
+          <SuggestedDestinationsCard destinations={suggestedDestinations} isLoading={isLoading} />
         </div>
 
         <div className="md:col-span-2 lg:col-span-4">
