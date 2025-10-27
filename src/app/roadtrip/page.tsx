@@ -11,16 +11,22 @@ import { getWeatherForRoute, type WeatherInfo } from "@/ai/flows/get-weather-for
 import { getTrafficForRoute, type TrafficAlert } from "@/ai/flows/get-traffic-for-route";
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
+import type { Stop } from '@/lib/types';
+import { Mountain, Tent, Music, Utensils } from 'lucide-react';
 
 const libraries: ('places' | 'maps')[] = ['places', 'maps'];
+
+const stopIcons = [Mountain, Tent, Music, Utensils];
 
 export default function RoadtripPage() {
   const [weather, setWeather] = useState<WeatherInfo | null>(null);
   const [traffic, setTraffic] = useState<TrafficAlert[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+  const [stops, setStops] = useState<Stop[]>([]);
 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script-roadtrip',
@@ -50,6 +56,17 @@ export default function RoadtripPage() {
           optimizeWaypoints: true,
         });
         setDirectionsResponse(results);
+
+        if (results.routes && results.routes[0]) {
+          const routeLegs = results.routes[0].legs;
+          const formattedStops: Stop[] = routeLegs.slice(0, -1).map((leg, index) => ({
+            id: `stop-${index}`,
+            name: leg.end_address.split(',')[0],
+            location: leg.end_address,
+            icon: stopIcons[index % stopIcons.length],
+          }));
+          setStops(formattedStops);
+        }
 
         const [weatherResponse, trafficResponse] = await Promise.all([
           getWeatherForRoute(demoRoute),
@@ -92,7 +109,7 @@ export default function RoadtripPage() {
           <p className="text-muted-foreground">Your real-time travel dashboard.</p>
         </div>
         
-        {isLoaded ? (
+        {isLoaded && !isLoading ? (
           <MapCard 
             className="lg:col-span-2 xl:col-span-3" 
             directionsResponse={directionsResponse} 
@@ -119,7 +136,7 @@ export default function RoadtripPage() {
         </div>
 
         <div className="md:col-span-2 lg:col-span-4">
-           <UpcomingStopsCard />
+           <UpcomingStopsCard stops={stops} isLoading={isLoading} />
         </div>
       </div>
     </AppShell>
