@@ -165,14 +165,22 @@ export default function TripPlannerCard({
   };
 
   const handleNavigate = () => {
-    if (!destination) return;
-    
-    // Waze URL scheme doesn't robustly support multi-stop routes like Google Maps.
-    // It will navigate to the final destination. The stops are visible on our map,
-    // but the turn-by-turn in Waze will be for the final leg.
-    const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
+    if (!origin || !destination) return;
 
-    window.open(wazeUrl, '_blank');
+    const googleMapsUrl = new URL("https://www.google.com/maps/dir/");
+    googleMapsUrl.searchParams.append("api", "1");
+    googleMapsUrl.searchParams.append("origin", origin);
+    googleMapsUrl.searchParams.append("destination", destination);
+
+    const waypointStrings = waypoints
+      .map(wp => ('location' in wp && wp.location?.toString()) || '')
+      .filter(Boolean);
+    
+    if (waypointStrings.length > 0) {
+      googleMapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
+    }
+
+    window.open(googleMapsUrl.toString(), '_blank');
     onStartTrip();
   };
 

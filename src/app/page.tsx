@@ -63,7 +63,8 @@ export default function Home() {
           },
           (error) => {
             console.error(`Error getting user location: ${error.message} (code: ${error.code})`);
-          }
+          },
+          { enableHighAccuracy: true }
         );
       }
     }
