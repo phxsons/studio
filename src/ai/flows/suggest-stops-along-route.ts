@@ -49,7 +49,7 @@ const prompt = ai.definePrompt({
   name: 'suggestStopsPrompt',
   input: { schema: SuggestStopsInputSchema },
   output: { schema: SuggestStopsOutputSchema },
-  prompt: `You are a personalized travel assistant for the RoadHog app. Your task is to suggest interesting stops along a road trip route based on the user's interests and vehicle fuel needs.
+  prompt: `You are a personalized travel assistant for the RoadHog app. Your task is to suggest interesting and popular stops along a road trip route based on the user's interests and vehicle fuel needs.
 
   The trip starts at {{origin}} and ends at {{destination}}.
   The user has already planned the following stops: {{#if waypoints}}{{#each waypoints}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{else}}None{{/if}}.
@@ -59,10 +59,11 @@ const prompt = ai.definePrompt({
   - Vehicle: {{vehicleDetails.make}} {{vehicleDetails.model}} with an MPG of {{vehicleDetails.mpg}} ({{vehicleDetails.fuelType}}).
 
   Based on the route, please suggest a few stops. The suggestions should be:
-  1. Relevant to the user's interests.
-  2. Geographically located between the origin, waypoints, and destination.
-  3. Include suggestions for gas stations, considering the vehicle's MPG to suggest stops before the tank might run low (assume a 15-gallon tank and that it starts full).
-  4. Diverse, including activities, food, and points of interest.
+  1. Highly relevant to the user's interests.
+  2. Popular and well-regarded points of interest.
+  3. Geographically located between the origin, waypoints, and destination.
+  4. Include suggestions for gas stations, considering the vehicle's MPG to suggest stops before the tank might run low (assume a 15-gallon tank and that it starts full).
+  5. Diverse, including activities, food, and points of interest.
 
   For each suggestion, provide the name, location (city, state), type, and a short description explaining why it's a great choice for this user.
 `,
