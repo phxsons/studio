@@ -1,27 +1,27 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import AppShell from "@/components/app-shell";
-import Map from "@/components/map";
-import PoiCarousel from "@/components/dashboard/poi-carousel";
-import UpcomingStopsCard from "@/components/dashboard/upcoming-stops-card";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { PanelRight } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Logo } from "@/components/logo";
-import { cn } from "@/lib/utils";
-import TripPlannerCard from "@/components/dashboard/trip-planner-card";
-import { useJsApiLoader } from "@react-google-maps/api";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
-import { suggestStopsAlongRoute, type SuggestedStop } from "@/ai/flows/suggest-stops-along-route";
-import { userProfile } from "@/lib/data";
+import { useState, useEffect } from 'react';
+import AppShell from '@/components/app-shell';
+import Map from '@/components/map';
+import PoiCarousel from '@/components/dashboard/poi-carousel';
+import UpcomingStopsCard from '@/components/dashboard/upcoming-stops-card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { PanelRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Logo } from '@/components/logo';
+import { cn } from '@/lib/utils';
+import TripPlannerCard from '@/components/dashboard/trip-planner-card';
+import { useJsApiLoader } from '@react-google-maps/api';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
+import { userProfile } from '@/lib/data';
+import { generatePersonalizedRoadTripItinerary, type RoadTripItineraryInput, type RoadTripItineraryOutput } from '@/ai/flows/generate-personalized-road-trip-itinerary';
 
-const libraries: ("places" | "maps")[] = ["places", "maps"];
+const libraries: ('places' | 'maps')[] = ['places', 'maps'];
 
-type TripStep = 'initial' | 'add-stops' | 'summary' | 'driving';
+export type TripStep = 'initial' | 'preferences' | 'generating' | 'summary' | 'driving';
 export type StopType = 'gas' | 'event' | 'lodging';
 
 export default function Home() {
@@ -32,18 +32,16 @@ export default function Home() {
   const [isRoutePlanning, setIsRoutePlanning] = useState(false);
   const [tripStep, setTripStep] = useState<TripStep>('initial');
   const [waypoints, setWaypoints] = useState<google.maps.DirectionsWaypoint[]>([]);
-  const [suggestions, setSuggestions] = useState<SuggestedStop[]>([]);
-  const [isSuggesting, setIsSuggesting] = useState(false);
-  
+  const [itinerary, setItinerary] = useState<RoadTripItineraryOutput | null>(null);
+
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries,
   });
-  
+
   useEffect(() => {
-    if (isLoaded && tripStep === 'initial') {
-      // Get user's current location
+    if (isLoaded && tripStep === 'initial' && !origin) {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -64,15 +62,15 @@ export default function Home() {
             let errorMessage = `Error getting user location: ${error.message}`;
             switch (error.code) {
               case error.PERMISSION_DENIED:
-                errorMessage = "User denied the request for Geolocation.";
+                errorMessage = 'User denied the request for Geolocation.';
                 console.error(`${errorMessage} (code: ${error.code})`);
                 break;
               case error.POSITION_UNAVAILABLE:
-                errorMessage = "Location information is unavailable.";
+                errorMessage = 'Location information is unavailable.';
                 console.log(`${errorMessage} (code: ${error.code})`);
                 break;
               case error.TIMEOUT:
-                errorMessage = "The request to get user location timed out.";
+                errorMessage = 'The request to get user location timed out.';
                 console.warn(`${errorMessage} (code: ${error.code})`);
                 break;
             }
@@ -81,128 +79,114 @@ export default function Home() {
         );
       }
     }
-  }, [isLoaded, tripStep]);
+  }, [isLoaded, tripStep, origin]);
 
-  const handlePlanRoute = async (newWaypoints: google.maps.DirectionsWaypoint[] = waypoints) => {
+  const handlePlanRoute = async (preferences?: Omit<RoadTripItineraryInput, 'startingPoint' | 'destination'>) => {
     if (!origin || !destination) {
       return;
     }
-    setIsRoutePlanning(true);
-    setSuggestions([]);
-    const directionsService = new google.maps.DirectionsService();
-    try {
-      const results = await directionsService.route({
-        origin: origin,
-        destination: destination,
-        travelMode: google.maps.TravelMode.DRIVING,
-        waypoints: newWaypoints,
-        optimizeWaypoints: true,
-      });
-      setDirectionsResponse(results);
-      if (tripStep === 'initial') {
-        setTripStep('add-stops');
-        getSuggestions(newWaypoints);
+
+    if (preferences) {
+      // AI Itinerary generation
+      setTripStep('generating');
+      setIsRoutePlanning(true);
+      try {
+        const fullPreferences: RoadTripItineraryInput = {
+          startingPoint: origin,
+          destination,
+          ...preferences,
+        };
+        const result = await generatePersonalizedRoadTripItinerary(fullPreferences);
+        setItinerary(result);
+
+        const newWaypoints = result.itinerary.map(stop => ({ location: stop.location, stopover: true }));
+        setWaypoints(newWaypoints);
+
+        const directionsService = new google.maps.DirectionsService();
+        const results = await directionsService.route({
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+          waypoints: newWaypoints,
+          optimizeWaypoints: true,
+        });
+        setDirectionsResponse(results);
+        setTripStep('summary');
+
+      } catch (error) {
+        console.error("Failed to generate itinerary:", error);
+        setTripStep('preferences'); // Go back to preferences on error
+      } finally {
+        setIsRoutePlanning(false);
       }
-    } catch (e) {
-      console.error("Directions request failed", e);
-    } finally {
-      setIsRoutePlanning(false);
+
+    } else {
+      // Simple route for customization check
+      setIsRoutePlanning(true);
+      const directionsService = new google.maps.DirectionsService();
+      try {
+        await directionsService.route({
+          origin: origin,
+          destination: destination,
+          travelMode: google.maps.TravelMode.DRIVING,
+        });
+        // Don't set directions response yet, just validate.
+        setTripStep('preferences');
+      } catch (e) {
+        console.error("Directions request failed", e);
+      } finally {
+        setIsRoutePlanning(false);
+      }
     }
   };
 
-  const getSuggestions = async (currentWaypoints: google.maps.DirectionsWaypoint[], newInterest?: string) => {
-    setIsSuggesting(true);
-    try {
-      const waypointStrings = currentWaypoints.map(wp => ('location' in wp && wp.location?.toString()) || '').filter(Boolean);
-      const interests = newInterest ? [...userProfile.interests, newInterest] : userProfile.interests;
-      const result = await suggestStopsAlongRoute({
-        origin,
-        destination,
-        waypoints: waypointStrings,
-        interests: interests,
-        vehicleDetails: userProfile.vehicle,
-      });
-      // Filter out suggestions that are already in waypoints
-      const existingStops = new Set(waypointStrings);
-      const newSuggestions = result.suggestions.filter(s => !existingStops.has(`${s.name}, ${s.location}`));
-
-      setSuggestions(newSuggestions);
-
-    } catch (error) {
-      console.error("Failed to get suggestions:", error);
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
-  
   const handleInteraction = () => {
     if (logoVisible) {
       setLogoVisible(false);
     }
   };
 
-  const handleAddStop = (stop: string, type: StopType) => {
-    const newWaypoint = { location: stop, stopover: true };
-    const newWaypoints = [...waypoints, newWaypoint];
-    setWaypoints(newWaypoints);
-    handlePlanRoute(newWaypoints);
-  };
-  
   const handleStartTrip = () => {
     setTripStep('driving');
     setLogoVisible(true);
     setTimeout(() => {
-        const logoEl = document.getElementById('animated-logo');
-        if (logoEl) {
-            logoEl.classList.add('-translate-x-[200vw]', 'rotate-[-360deg]');
-        }
+      const logoEl = document.getElementById('animated-logo');
+      if (logoEl) {
+        logoEl.classList.add('-translate-x-[200vw]', 'rotate-[-360deg]');
+      }
     }, 100);
     setTimeout(() => setLogoVisible(false), 1500);
   };
 
   const handleResetTrip = () => {
-    setOrigin('');
     setDestination('');
     setDirectionsResponse(null);
     setWaypoints([]);
-    setSuggestions([]);
+    setItinerary(null);
     setTripStep('initial');
-  }
+  };
 
-  const handleAddSuggestion = (suggestion: SuggestedStop) => {
-    const stopString = `${suggestion.name}, ${suggestion.location}`;
-    const newWaypoint = { location: stopString, stopover: true };
-    const newWaypoints = [...waypoints, newWaypoint];
-    setWaypoints(newWaypoints);
-    // Remove the suggestion from the list
-    setSuggestions(prev => prev.filter(s => s.name !== suggestion.name));
-    handlePlanRoute(newWaypoints);
-  }
-
-  const handleConfirmStops = () => {
-    setTripStep('summary');
-  }
-
-  const handleNavigate = () => {
+  const handleNavigate = (useGoogleMaps: boolean) => {
     if (!origin || !destination) return;
 
-    const googleMapsUrl = new URL("https://www.google.com/maps/dir/");
-    googleMapsUrl.searchParams.append("api", "1");
-    googleMapsUrl.searchParams.append("origin", origin);
-    googleMapsUrl.searchParams.append("destination", destination);
+    if (useGoogleMaps) {
+      const googleMapsUrl = new URL("https://www.google.com/maps/dir/");
+      googleMapsUrl.searchParams.append("api", "1");
+      googleMapsUrl.searchParams.append("origin", origin);
+      googleMapsUrl.searchParams.append("destination", destination);
 
-    const waypointStrings = waypoints
-      .map(wp => ('location' in wp && wp.location?.toString()) || '')
-      .filter(Boolean);
-    
-    if (waypointStrings.length > 0) {
-      googleMapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
+      const waypointStrings = waypoints
+        .map(wp => ('location' in wp && wp.location?.toString()) || '')
+        .filter(Boolean);
+
+      if (waypointStrings.length > 0) {
+        googleMapsUrl.searchParams.append("waypoints", waypointStrings.join('|'));
+      }
+      googleMapsUrl.searchParams.append("travelmode", "driving");
+      window.open(googleMapsUrl.toString(), '_blank');
+    } else {
+       handleStartTrip();
     }
-
-    googleMapsUrl.searchParams.append("travelmode", "driving");
-
-    window.open(googleMapsUrl.toString(), '_blank');
-    handleStartTrip();
   };
 
   if (loadError) {
@@ -219,7 +203,7 @@ export default function Home() {
           </Alert>
         </div>
       </AppShell>
-    )
+    );
   }
 
   if (!isLoaded) {
@@ -232,7 +216,7 @@ export default function Home() {
 
   return (
     <AppShell title="RoadHog">
-      <div 
+      <div
         className="relative h-full w-full"
         onMouseEnter={handleInteraction}
         onTouchStart={handleInteraction}
@@ -240,7 +224,7 @@ export default function Home() {
       >
         <Map directionsResponse={directionsResponse} />
 
-        <div 
+        <div
           className={cn(
             "absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm transition-opacity duration-500",
             !logoVisible && "opacity-0 pointer-events-none",
@@ -254,34 +238,28 @@ export default function Home() {
           <p className={cn(
             "mt-4 text-lg font-semibold text-foreground",
             tripStep === 'driving' && 'hidden'
-            )}>Hover or tap to begin</p>
+          )}>Hover or tap to begin</p>
         </div>
-        
+
         <div className={cn("absolute inset-0 top-auto bg-gradient-to-t from-black/80 to-transparent p-8 text-center transition-opacity duration-500", tripStep !== 'initial' || !logoVisible ? "opacity-0" : "")}>
-            <h1 className="text-4xl font-bold text-white">Let's get our next journey started!</h1>
+          <h1 className="text-4xl font-bold text-white">Let's get our next journey started!</h1>
         </div>
 
         {tripStep !== 'driving' && (
-           <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
-             <TripPlannerCard 
-               origin={origin}
-               destination={destination}
-               onOriginChange={setOrigin}
-               onDestinationChange={setDestination}
-               onPlanRoute={() => handlePlanRoute()}
-               isRoutePlanning={isRoutePlanning}
-               tripStep={tripStep}
-               onAddStop={handleAddStop}
-               onConfirmStops={handleConfirmStops}
-               onStartTrip={handleNavigate}
-               onReset={handleResetTrip}
-               waypoints={waypoints}
-               onEditStops={() => setTripStep('add-stops')}
-               suggestions={suggestions}
-               onAddSuggestion={handleAddSuggestion}
-               isSuggesting={isSuggesting}
-             />
-           </div>
+          <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
+            <TripPlannerCard
+              origin={origin}
+              destination={destination}
+              onDestinationChange={setDestination}
+              onPlanRoute={handlePlanRoute}
+              isRoutePlanning={isRoutePlanning}
+              tripStep={tripStep}
+              onStartTrip={handleNavigate}
+              onReset={handleResetTrip}
+              itinerary={itinerary}
+              onBackToPreferences={() => setTripStep('preferences')}
+            />
+          </div>
         )}
 
         <Sheet>
@@ -292,18 +270,18 @@ export default function Home() {
             </Button>
           </SheetTrigger>
           <SheetContent side="right" className="w-full sm:max-w-md p-0">
-              <SheetHeader className="p-4 border-b">
-                <SheetTitle>Trip Details</SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100%-4rem)]">
-                <div className="space-y-6 p-4">
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
-                    <PoiCarousel />
-                  </div>
-                  <UpcomingStopsCard stops={[]} isLoading={false} />
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle>Trip Details</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="h-[calc(100%-4rem)]">
+              <div className="space-y-6 p-4">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
+                  <PoiCarousel />
                 </div>
-              </ScrollArea>
+                <UpcomingStopsCard stops={[]} isLoading={false} />
+              </div>
+            </ScrollArea>
           </SheetContent>
         </Sheet>
       </div>
