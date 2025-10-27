@@ -41,13 +41,20 @@ export default function Home() {
       setIsRoutePlanning(false);
     }
   };
+  
+  const handleInteraction = () => {
+    if (logoVisible) {
+      setLogoVisible(false);
+    }
+  };
 
   return (
     <AppShell title="RoadHog">
       <div 
         className="relative h-full w-full"
-        onMouseEnter={() => setLogoVisible(false)}
-        onTouchStart={() => setLogoVisible(false)}
+        onMouseEnter={handleInteraction}
+        onTouchStart={handleInteraction}
+        onFocusCapture={handleInteraction}
       >
         <Map directionsResponse={directionsResponse} />
 
@@ -65,6 +72,17 @@ export default function Home() {
             <h1 className="text-4xl font-bold text-white">Let's get our next journey started!</h1>
         </div>
 
+        <div className="absolute top-4 left-4 z-10 w-full max-w-sm">
+          <TripPlannerCard 
+            origin={origin}
+            destination={destination}
+            onOriginChange={setOrigin}
+            onDestinationChange={setDestination}
+            onPlanRoute={handlePlanRoute}
+            isRoutePlanning={isRoutePlanning}
+          />
+        </div>
+
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="absolute top-4 right-4 z-10 bg-background/80 backdrop-blur-sm">
@@ -78,14 +96,6 @@ export default function Home() {
               </SheetHeader>
               <ScrollArea className="h-[calc(100%-4rem)]">
                 <div className="space-y-6 p-4">
-                  <TripPlannerCard 
-                    origin={origin}
-                    destination={destination}
-                    onOriginChange={setOrigin}
-                    onDestinationChange={setDestination}
-                    onPlanRoute={handlePlanRoute}
-                    isRoutePlanning={isRoutePlanning}
-                  />
                   <WeatherCard />
                   <div>
                     <h2 className="text-xl font-bold tracking-tight mb-4">Points of Interest</h2>
