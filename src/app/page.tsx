@@ -1,28 +1,16 @@
 import AppShell from "@/components/app-shell";
-import MapCard from "@/components/dashboard/map-card";
-import PoiCarousel from "@/components/dashboard/poi-carousel";
-import UpcomingStopsCard from "@/components/dashboard/upcoming-stops-card";
-import WeatherCard from "@/components/dashboard/weather-card";
 
 export default function Home() {
   return (
-    <AppShell title="RoadHog Radar">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 p-4 md:p-6">
-        <div className="md:col-span-2 lg:col-span-3 xl:col-span-4">
-          <h1 className="text-2xl font-bold tracking-tight">RoadHog Radar</h1>
-          <p className="text-muted-foreground">Your real-time travel dashboard.</p>
-        </div>
-        
-        <MapCard className="lg:col-span-2 xl:col-span-3" />
-        <WeatherCard />
-        
-        <div className="md:col-span-2 lg:col-span-4">
-          <h2 className="text-xl font-bold tracking-tight mb-4">Interest-Based Discovery</h2>
-          <PoiCarousel />
-        </div>
-
-        <div className="md:col-span-2 lg:col-span-4">
-           <UpcomingStopsCard />
+    <AppShell title="RoadHog">
+      <div className="relative h-full w-full">
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1694580511925-bfca6bb34020?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYXAlMjByb3V0ZXxlbnwwfHx8fDE3NjE0NjUwMzJ8MA&ixlib=rb-4.1.0&q=80&w=1080')" }}
+        >
+          <div className="flex h-full w-full flex-col items-center justify-center bg-black/50">
+            <h1 className="text-4xl font-bold text-white">Let's get our next journey started!</h1>
+          </div>
         </div>
       </div>
     </AppShell>

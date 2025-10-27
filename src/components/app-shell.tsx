@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, User } from "lucide-react";
+import { LayoutDashboard, User, Map } from "lucide-react";
 
 import {
   SidebarProvider,
@@ -29,7 +29,12 @@ export default function AppShell({ children, title }: AppShellProps) {
   const menuItems = [
     {
       href: "/",
-      label: "Dashboard",
+      label: "Home",
+      icon: Map,
+    },
+    {
+      href: "/roadtrip",
+      label: "Roadtrip",
       icon: LayoutDashboard,
     },
     {
