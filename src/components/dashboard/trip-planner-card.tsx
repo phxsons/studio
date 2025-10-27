@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRef, useState } from "react";
@@ -150,9 +151,8 @@ export default function TripPlannerCard({
 
           {tripStep === 'generating' && (
              <div className="flex flex-col items-center justify-center text-center space-y-4 h-64">
-                <Sparkles className="h-12 w-12 text-accent animate-pulse" />
-                <p className="font-semibold">Building your adventure...</p>
-                <p className="text-sm text-muted-foreground">This can take a moment.</p>
+                <Loader2 className="h-16 w-16 text-primary animate-spin" />
+                <p className="font-bold text-xl">We're Going Hog Wild</p>
              </div>
           )}
 
